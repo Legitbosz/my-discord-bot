@@ -262,6 +262,88 @@ async def leaderboard(ctx):
         )
     await ctx.send(embed=embed)
 
+    # ─────────────────────────────────────────
+#  DAILY REWARDS SYSTEM
+# ─────────────────────────────────────────
+import time
+coin_data = {}
+
+@bot.command()
+async def daily(ctx):
+    """Claim your daily 100 coins"""
+    user_id = str(ctx.author.id)
+    now = time.time()
+
+    if user_id not in coin_data:
+        coin_data[user_id] = {"coins": 0, "last_daily": 0, "name": ctx.author.display_name}
+
+    last_daily = coin_data[user_id]["last_daily"]
+    time_left = 86400 - (now - last_daily)
+
+    if time_left > 0:
+        hours = int(time_left // 3600)
+        minutes = int((time_left % 3600) // 60)
+        await ctx.send(f"⏰ {ctx.author.mention} you already claimed today! Come back in **{hours}h {minutes}m**!")
+        return
+
+    coin_data[user_id]["coins"] += 100
+    coin_data[user_id]["last_daily"] = now
+    coin_data[user_id]["name"] = ctx.author.display_name
+    total = coin_data[user_id]["coins"]
+    await ctx.send(f"💰 {ctx.author.mention} claimed their daily **100 coins!** Total: **{total} coins**!")
+
+@bot.command()
+async def balance(ctx, member: discord.Member = None):
+    """Check your coin balance. Usage: !balance or !balance @user"""
+    member = member or ctx.author
+    user_id = str(member.id)
+
+    if user_id not in coin_data or coin_data[user_id]["coins"] == 0:
+        await ctx.send(f"{member.display_name} has no coins yet! Use `!daily` to claim some!")
+        return
+
+    coins = coin_data[user_id]["coins"]
+    await ctx.send(f"💰 {member.display_name} has **{coins} coins**!")
+
+@bot.command()
+async def give(ctx, member: discord.Member, amount: int):
+    """Give coins to another member. Usage: !give @user 50"""
+    if amount <= 0:
+        await ctx.send("Amount must be more than 0!")
+        return
+
+    sender_id = str(ctx.author.id)
+    receiver_id = str(member.id)
+
+    if sender_id not in coin_data or coin_data[sender_id]["coins"] < amount:
+        await ctx.send(f"You don't have enough coins! Use `!daily` to claim some!")
+        return
+
+    if receiver_id not in coin_data:
+        coin_data[receiver_id] = {"coins": 0, "last_daily": 0, "name": member.display_name}
+
+    coin_data[sender_id]["coins"] -= amount
+    coin_data[receiver_id]["coins"] += amount
+    await ctx.send(f"💸 {ctx.author.mention} gave **{amount} coins** to {member.mention}!")
+
+@bot.command()
+async def richest(ctx):
+    """Show top 5 richest members"""
+    if not coin_data:
+        await ctx.send("Nobody has coins yet! Use `!daily` to claim some!")
+        return
+
+    sorted_users = sorted(coin_data.items(), key=lambda x: x[1]["coins"], reverse=True)[:5]
+    embed = discord.Embed(title="💰 Richest Members", color=discord.Color.gold())
+    medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
+    for i, (user_id, data) in enumerate(sorted_users):
+        embed.add_field(
+            name=f"{medals[i]} {data['name']}",
+            value=f"{data['coins']} coins",
+            inline=False
+        )
+    await ctx.send(embed=embed)
+
 # ─────────────────────────────────────────
 #  RUN THE BOT
 # ─────────────────────────────────────────
