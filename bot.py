@@ -218,7 +218,7 @@ async def on_message(message):
     xp_data[user_id]["level"] = new_level
 
     if new_level > old_level:
-   level_channel = discord.utils.get(message.guild.text_channels, name=LEVEL_UPS_CHANNEL)
+        level_channel = discord.utils.get(message.guild.text_channels, name=LEVEL_UPS_CHANNEL)
         channel = level_channel or message.channel
         await channel.send(f"🎉 {message.author.mention} just leveled up to **Level {new_level}!** Keep chatting!")
 
