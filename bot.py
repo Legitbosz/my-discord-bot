@@ -13,6 +13,10 @@ from datetime import datetime
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+# Channel names for organized bot responses
+TRIVIA_CHANNEL = "trivia"
+BOT_COMMANDS_CHANNEL = "bot-commands"
+LEVEL_UPS_CHANNEL = "level-ups"
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -25,9 +29,9 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-    channel = discord.utils.get(member.guild.text_channels, name="general")
+    channel = discord.utils.get(member.guild.text_channels, name="welcome")
     if channel:
-        await channel.send(f"Welcome to the server, {member.mention}! Glad to have you here.")
+        await channel.send(f"👋 Welcome to the server, {member.mention}! Check the rules and enjoy your stay!")
 
 # ─────────────────────────────────────────
 #  FUN COMMANDS
@@ -214,7 +218,9 @@ async def on_message(message):
     xp_data[user_id]["level"] = new_level
 
     if new_level > old_level:
-        await message.channel.send(f"🎉 {message.author.mention} just leveled up to **Level {new_level}!** Keep chatting!")
+   level_channel = discord.utils.get(message.guild.text_channels, name=LEVEL_UPS_CHANNEL)
+        channel = level_channel or message.channel
+        await channel.send(f"🎉 {message.author.mention} just leveled up to **Level {new_level}!** Keep chatting!")
 
     await bot.process_commands(message)
 
