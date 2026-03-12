@@ -190,6 +190,72 @@ async def trivia(ctx, arg=None):
         del active_trivia[ctx.channel.id]
         await ctx.send(f"⏰ Time's up! The answer was **{question['answer']}**!")
 
+        # ─────────────────────────────────────────
+#  XP & LEVELING SYSTEM
+# ─────────────────────────────────────────
+xp_data = {}
+
+def get_level(xp):
+    return int(xp ** 0.4)
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    user_id = str(message.author.id)
+    if user_id not in xp_data:
+        xp_data[user_id] = {"xp": 0, "level": 0, "name": message.author.display_name}
+
+    old_level = xp_data[user_id]["level"]
+    xp_data[user_id]["xp"] += random.randint(5, 15)
+    xp_data[user_id]["name"] = message.author.display_name
+    new_level = get_level(xp_data[user_id]["xp"])
+    xp_data[user_id]["level"] = new_level
+
+    if new_level > old_level:
+        await message.channel.send(f"🎉 {message.author.mention} just leveled up to **Level {new_level}!** Keep chatting!")
+
+    await bot.process_commands(message)
+
+@bot.command()
+async def rank(ctx, member: discord.Member = None):
+    """Check your XP and level. Usage: !rank or !rank @user"""
+    member = member or ctx.author
+    user_id = str(member.id)
+
+    if user_id not in xp_data:
+        await ctx.send(f"{member.display_name} hasn't earned any XP yet!")
+        return
+
+    xp = xp_data[user_id]["xp"]
+    level = xp_data[user_id]["level"]
+    next_level_xp = ((level + 1) ** (1/0.4))
+
+    embed = discord.Embed(title=f"{member.display_name}'s Rank", color=discord.Color.gold())
+    embed.add_field(name="Level", value=level, inline=True)
+    embed.add_field(name="XP", value=xp, inline=True)
+    embed.add_field(name="Next Level", value=f"{int(next_level_xp)} XP", inline=True)
+    await ctx.send(embed=embed)
+
+@bot.command()
+async def leaderboard(ctx):
+    """Show top 5 members by XP"""
+    if not xp_data:
+        await ctx.send("Nobody has earned XP yet! Start chatting!")
+        return
+
+    sorted_users = sorted(xp_data.items(), key=lambda x: x[1]["xp"], reverse=True)[:5]
+    embed = discord.Embed(title="XP Leaderboard", color=discord.Color.gold())
+    medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
+    for i, (user_id, data) in enumerate(sorted_users):
+        embed.add_field(
+            name=f"{medals[i]} {data['name']}",
+            value=f"Level {data['level']} — {data['xp']} XP",
+            inline=False
+        )
+    await ctx.send(embed=embed)
+
 # ─────────────────────────────────────────
 #  RUN THE BOT
 # ─────────────────────────────────────────
